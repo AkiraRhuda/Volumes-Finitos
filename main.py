@@ -14,31 +14,19 @@ rho = 1.1769  # kg/m^3
 T = 300  # K
 mu = 1.85*10**(-5) # Pa . s
 Do2_ar = 2.015*10**(-5) # m^2 / s
-r = 0 # kg / m . s
+r = 0.1 # kg / m^3 . s
 
 # Condições iniciais
 Re = 0
-Cw = 0
+Cw = 0.21
 
 # Parâmetros da Barra
 Lx = 3  # m
 Ly = 1  # m
 
-# Termos da velocidade
-Ue = Re * mu / (rho * Ly)
-Uw = Re * mu / (rho * Ly)
-Un = 0
-Us = 0
-
-Fe = rho*Ue
-Fw = rho*Uw
-Fn = rho*Un
-Fs = rho*Us
-
-
 # Parâmetros da simulação
-nx = 5
-ny = 5
+nx = 120
+ny = 40
 N = nx * ny
 
 dx = Lx/(nx - 1)
@@ -51,6 +39,16 @@ x = np.linspace(dx/2, Lx - dx/2, nx)
 y = np.linspace(dx/2, Ly - dx/2, ny)
 X, Y = np.meshgrid(x, y)
 
+# Termos da velocidade
+Ue = Re * mu / (rho * Ly)
+Uw = Re * mu / (rho * Ly)
+Un = 0
+Us = 0
+
+Fe = rho*Ue*dy
+Fw = rho*Uw*dy
+Fn = rho*Un*dx
+Fs = rho*Us*dx
 
 ########################################
 ############## EXPLÍCITO ###############
@@ -117,7 +115,7 @@ for i in range(1, ny - 1):
         We = Fe/2 - rho*Do2_ar*dy/dx
         Ws = -Fs/2 - rho*Do2_ar*dx/dy
         Wn = Fn/2 - rho*Do2_ar*dx/dy
-        S = r*dx*dy
+        S = -r*dx*dy
 
         A[m, m] = Wp
         A[m, m - 1] = Ww
@@ -131,7 +129,7 @@ m = 0
 Wp = Fe/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx/2) + rho*Do2_ar*dx/dy
 We = Fe/2 - rho*Do2_ar*dy/dx
 Ws = -Fs/2 - rho*Do2_ar*dx/dy
-S = r*dx*dy + Fw*Cw + rho*Do2_ar*dy/(dx/2)*Cw
+S = -r*dx*dy + Fw*Cw + rho*Do2_ar*dy/(dx/2)*Cw
 
 A[m, m] = Wp
 A[m, m + 1] = We
@@ -144,7 +142,7 @@ for m in range(1, nx - 1):
     Ww = -Fw/2 - rho*Do2_ar*dy/dx
     We = Fe/2 - rho*Do2_ar*dy/dx
     Ws = -Fs/2 - rho*Do2_ar*dx/dy
-    S = r*dx*dy
+    S = -r*dx*dy
 
     A[m, m] = Wp
     A[m, m - 1] = Ww
@@ -154,10 +152,10 @@ for m in range(1, nx - 1):
 
 # Canto Superior Direito
 m = nx - 1
-Wp = -Fw/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+Wp = Fe - Fw/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
 Ww = -Fw/2 - rho*Do2_ar*dy/dx
 Ws = -Fs/2 - rho*Do2_ar*dx/dy
-S = r*dx*dy
+S = -r*dx*dy
 
 A[m, m] = Wp
 A[m, m - 1] = Ww
@@ -170,7 +168,7 @@ for m in range(nx, (ny - 2) * nx + 1, nx):
     We = Fe/2 - rho*Do2_ar*dy/dx
     Wn = Fn/2 - rho*Do2_ar*dx/dy
     Ws = -Fs/2 - rho*Do2_ar*dx/dy
-    S = r*dx*dy + Fw*Cw + rho*Do2_ar*dy/(dx/2)*Cw
+    S = -r*dx*dy + Fw*Cw + rho*Do2_ar*dy/(dx/2)*Cw
 
     A[m, m] = Wp
     A[m, m + 1] = We
@@ -180,11 +178,11 @@ for m in range(nx, (ny - 2) * nx + 1, nx):
 
 # Fronteira Leste
 for m in range(2 * nx - 1, (ny - 1) * nx, nx):
-    Wp = -Fw/2 + Fn/2 - Fs/2 + rho*Do2_ar*dy/dx + 2*rho*Do2_ar*dx/dy
+    Wp = Fe - Fw/2 + Fn/2 - Fs/2 + rho*Do2_ar*dy/dx + 2*rho*Do2_ar*dx/dy
     Ww = -Fw/2 - rho*Do2_ar*dy/dx
     Wn = Fn/2 - rho*Do2_ar*dx/dy
     Ws = -Fs/2 - rho*Do2_ar*dx/dy
-    S = r*dx*dy
+    S = -r*dx*dy
 
     A[m, m] = Wp
     A[m, m - 1] = Ww
@@ -197,7 +195,7 @@ m = (ny - 1) * nx
 Wp = Fe/2 + Fn/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx/2) + rho*Do2_ar*dx/dy
 We = Fe/2 - rho*Do2_ar*dy/dx
 Wn = Fn/2 - rho*Do2_ar*dx/dy
-S = r*dx*dy + Fw*Cw + rho*Do2_ar*dy/(dx/2)*Cw
+S = -r*dx*dy + Fw*Cw + rho*Do2_ar*dy/(dx/2)*Cw
 
 A[m, m] = Wp
 A[m, m + 1] = We
@@ -210,7 +208,7 @@ for m in range((ny - 1) * nx + 1, ny * nx - 1):
     Ww = -Fw/2 - rho*Do2_ar*dy/dx
     We = Fe/2 - rho*Do2_ar*dy/dx
     Wn = Fn/2 - rho*Do2_ar*dx/dy
-    S = r*dx*dy
+    S = -r*dx*dy
 
     A[m, m] = Wp
     A[m, m - 1] = Ww
@@ -220,10 +218,10 @@ for m in range((ny - 1) * nx + 1, ny * nx - 1):
 
 # Canto Inferior Direito
 m = ny * nx - 1
-Wp = -Fw/2 + Fn/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+Wp = Fe - Fw/2 + Fn/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
 Ww = -Fw/2 - rho*Do2_ar*dy/dx
 Wn = Fn/2 - rho*Do2_ar*dx/dy
-S = r*dx*dy
+S = -r*dx*dy
 
 A[m, m] = Wp
 A[m, m - 1] = Ww
