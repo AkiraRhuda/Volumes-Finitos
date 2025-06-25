@@ -14,10 +14,10 @@ rho = 1.1769  # kg/m^3
 T = 300  # K
 mu = 1.85*10**(-5) # Pa . s
 Do2_ar = 2.015*10**(-5) # m^2 / s
-r = 0.1 # kg / m^3 . s
+r = 0 # kg / m^3 . s
 
 # Condições iniciais
-Re = 100
+Re = 0
 Cw = 0.21
 
 # Parâmetros da Barra
@@ -120,8 +120,8 @@ for i in range(1, ny - 1):
         A[m, m] = Wp
         A[m, m - 1] = Ww
         A[m, m + 1] = We
-        A[m, m + nx] = Wn
-        A[m, m - nx] = Ws
+        A[m, m - nx] = Wn
+        A[m, m + nx] = Ws
         B[m] = S
 
 # Canto Superior Esquerdo
@@ -133,7 +133,7 @@ S = -r*dx*dy + Fw*Cw + rho*Do2_ar*dy/(dx/2)*Cw
 
 A[m, m] = Wp
 A[m, m + 1] = We
-A[m, m - nx] = Ws
+A[m, m + nx] = Ws
 B[m] = S
 
 # Fronteira Norte
@@ -147,7 +147,7 @@ for m in range(1, nx - 1):
     A[m, m] = Wp
     A[m, m - 1] = Ww
     A[m, m + 1] = We
-    A[m, m - nx] = Ws
+    A[m, m + nx] = Ws
     B[m] = S
 
 # Canto Superior Direito
@@ -159,7 +159,7 @@ S = -r*dx*dy
 
 A[m, m] = Wp
 A[m, m - 1] = Ww
-A[m, m - nx] = Ws
+A[m, m + nx] = Ws
 B[m] = S
 
 # Fronteira Oeste
@@ -172,8 +172,8 @@ for m in range(nx, (ny - 2) * nx + 1, nx):
 
     A[m, m] = Wp
     A[m, m + 1] = We
-    A[m, m - nx] = Ws
-    A[m, m + nx] = Wn
+    A[m, m + nx] = Ws
+    A[m, m - nx] = Wn
     B[m] = S
 
 # Fronteira Leste
@@ -186,8 +186,8 @@ for m in range(2 * nx - 1, (ny - 1) * nx, nx):
 
     A[m, m] = Wp
     A[m, m - 1] = Ww
-    A[m, m + nx] = Wn
-    A[m, m - nx] = Ws
+    A[m, m - nx] = Wn
+    A[m, m + nx] = Ws
     B[m] = S
 
 # Canto Inferior Esquerdo
@@ -199,7 +199,7 @@ S = -r*dx*dy + Fw*Cw + rho*Do2_ar*dy/(dx/2)*Cw
 
 A[m, m] = Wp
 A[m, m + 1] = We
-A[m, m + nx] = Wn
+A[m, m - nx] = Wn
 B[m] = S
 
 # Fronteira Sul
@@ -213,7 +213,7 @@ for m in range((ny - 1) * nx + 1, ny * nx - 1):
     A[m, m] = Wp
     A[m, m - 1] = Ww
     A[m, m + 1] = We
-    A[m, m + nx] = Wn
+    A[m, m - nx] = Wn
     B[m] = S
 
 # Canto Inferior Direito
@@ -225,14 +225,15 @@ S = -r*dx*dy
 
 A[m, m] = Wp
 A[m, m - 1] = Ww
-A[m, m + nx] = Wn
+A[m, m - nx] = Wn
 B[m] = S
 
 
 x0 = np.ones(N)
 Eppara = scarvorought(12)
 Lambda = 1
-W = Gauss_Seidel_com_relaxamento(A, B, Lambda, x0, Eppara, maxit=1000)
+#W = Gauss_Seidel_com_relaxamento(A, B, Lambda, x0, Eppara, maxit=1000)
+W = np.linalg.solve(A, B)
 index = np.arange(N).reshape(ny,nx)
 XYW = np.zeros((ny, nx))
 for i in range(ny):
