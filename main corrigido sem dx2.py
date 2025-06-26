@@ -18,7 +18,7 @@ r = 0.1 # kg / m^3 . s
 
 # Condições iniciais
 Re = 100
-Cw = 21
+Cw = 0.21*100
 
 # Parâmetros da Barra
 Lx = 3  # m
@@ -26,7 +26,7 @@ Ly = 1  # m
 
 # Parâmetros da simulação
 nx = 120
-ny = 60
+ny = 40
 N = nx * ny
 
 dx = Lx/(nx - 1)
@@ -50,9 +50,7 @@ Fw = rho*Uw*dy
 Fn = rho*Un*dx
 Fs = rho*Us*dx
 
-########################################
-############## EXPLÍCITO ###############
-########################################
+
 
 def Gauss_Seidel_com_relaxamento(A, b, Lambda, x0, Eppara, maxit):
     ne = len(b)
@@ -120,9 +118,9 @@ for i in range(1, ny - 1):
         A[m, m - nx] = Ws
         B[m] = S
 
-
-for i in range(int(ny/2-nx/20)-1,int(ny/2+nx/20)):
-    for m in range(i*nx + int(nx/3)-1,i*nx + int(nx/3+nx/10)):
+# Queimador
+for i in range(int(ny/2-nx/20),int(ny/2+nx/20)):
+    for m in range(i*nx + int(nx/3),i*nx + int(nx/3+nx/10)):
         S = -r*dx*dy
         B[m] = S
 
@@ -195,7 +193,7 @@ for m in range(2 * nx - 1, (ny - 1) * nx, nx):
 
 # Canto Superior Esquerdo
 m = (ny - 1) * nx
-Wp = Fe/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx/2) + rho*Do2_ar*dx/dy
+Wp = Fe/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx) + rho*Do2_ar*dx/dy
 We = Fe/2 - rho*Do2_ar*dy/dx
 Ws = -Fs/2 - rho*Do2_ar*dx/dy
 S = Fw*Cw + rho*Do2_ar*dy/(dx)*Cw
@@ -235,12 +233,13 @@ W = np.linalg.solve(A,B)
 XYW = W.reshape((ny, nx))
 
 
-
+# Pós-processamento
 fig, ax = plt.subplots(figsize=(13, 7))
 c = ax.contourf(X, Y, XYW, cmap='plasma')
 fig.colorbar(c, ax=ax, label=r'Concentração ')
 ax.set_xlabel('x (m)')
 ax.set_ylabel('y (m)')
+
 plt.title(r'Distrubuição da Espécie química $O_2$')
 plt.show()
 

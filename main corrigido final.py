@@ -128,8 +128,8 @@ for i in range(1, ny - 1):
         S = r*dx*dy
         B[m] = S"""
 
-for i in range(int(ny/2-nx/20)-1,int(ny/2+nx/20)):
-    for m in range(i*nx + int(nx/3)-1,i*nx + int(nx/3+nx/10)):
+for i in range(int(ny/2-nx/20),int(ny/2+nx/20)):
+    for m in range(i*nx + int(nx/3),i*nx + int(nx/3+nx/10)):
         S = -r*dx*dy
         B[m] = S
 
