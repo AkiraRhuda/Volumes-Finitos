@@ -14,7 +14,7 @@ rho = 1.1769  # kg/m^3
 T = 300  # K
 mu = 1.85*10**(-5) # Pa . s
 Do2_ar = 2.015*10**(-5) # m^2 / s
-r = 0.1 # kg / m^3 . s
+r = 0 # kg / m^3 . s
 
 # Condições iniciais
 Re = 100
@@ -25,8 +25,8 @@ Lx = 3  # m
 Ly = 1  # m
 
 # Parâmetros da simulação
-nx = 60
-ny = 20
+nx = 120
+ny = 40
 N = nx * ny
 
 dx = Lx/(nx - 1)
@@ -35,7 +35,7 @@ dy = Ly/(ny - 1)
 A = np.zeros((N, N))
 B = np.zeros(N)
 
-x = np.linspace(0, Lx, nx)
+x = np.linspace(0, Lx , nx)
 y = np.linspace(0, Ly, ny)
 X, Y = np.meshgrid(x, y)
 
@@ -103,13 +103,13 @@ def Gauss_Seidel(A, b, x0, Eppara, maxit):
 def scarvorought(n):
     return 0.5 * 10 ** (2-n)
 
+
+
 ################ MONTAGEM DA MATRIZ ################
+
 # Central
 for i in range(1, ny - 1):
     for m in range(i * nx + 1, (i + 1) * nx - 1):
-        x_pos = i * dx
-        y_pos = m * dy
-        k = m * nx + i  # Índice linear do ponto
         Wp = Fe/2 - Fw/2 + Fn/2 - Fs/2 + 2*rho*Do2_ar*dy/dx + 2*rho*Do2_ar*dx/dy
         Ww = -Fw/2 - rho*Do2_ar*dy/dx
         We = Fe/2 - rho*Do2_ar*dy/dx
@@ -120,65 +120,62 @@ for i in range(1, ny - 1):
         A[m, m] = Wp
         A[m, m - 1] = Ww
         A[m, m + 1] = We
-        A[m, m - nx] = Wn
-        A[m, m + nx] = Ws
+        A[m, m + nx] = Wn
+        A[m, m - nx] = Ws
         B[m] = S
 
-for i in range(int(ny/2-nx/20-1),int(ny/2+nx/20-1)):
-    for m in range(int(nx/3-nx/20-1),int(nx/3+nx/20-1)):
-        S = r*dx*dy
-        B[m] = S
-
-# Canto Superior Esquerdo
+# Canto Inferior Esquerdo
 m = 0
-Wp = Fe/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx/2) + rho*Do2_ar*dx/dy
+Wp = Fe/2 + Fn/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx) + rho*Do2_ar*dx/dy
 We = Fe/2 - rho*Do2_ar*dy/dx
-Ws = -Fs/2 - rho*Do2_ar*dx/dy
-S = Fw*Cw + rho*Do2_ar*dy/(dx/2)*Cw
+Wn = Fn/2 - rho*Do2_ar*dx/dy
+S = Fw*Cw + rho*Do2_ar*dy/(dx)*Cw
 
 A[m, m] = Wp
 A[m, m + 1] = We
-A[m, m + nx] = Ws
+A[m, m + nx] = Wn
 B[m] = S
 
-# Fronteira Norte
+
+
+# Fronteira Sul
 for m in range(1, nx - 1):
-    Wp = Fe/2 - Fw/2 - Fs/2 + 2*rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+    Wp = Fe/2 - Fw/2 + Fn/2 + 2*rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
     Ww = -Fw/2 - rho*Do2_ar*dy/dx
     We = Fe/2 - rho*Do2_ar*dy/dx
-    Ws = -Fs/2 - rho*Do2_ar*dx/dy
+    Wn = Fn/2 - rho*Do2_ar*dx/dy
     S = 0
 
     A[m, m] = Wp
     A[m, m - 1] = Ww
     A[m, m + 1] = We
-    A[m, m + nx] = Ws
+    A[m, m + nx] = Wn
     B[m] = S
 
-# Canto Superior Direito
+# Canto Inferior Direito
 m = nx - 1
-Wp = Fe - Fw/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+Wp = Fe - Fw/2 + Fn/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
 Ww = -Fw/2 - rho*Do2_ar*dy/dx
-Ws = -Fs/2 - rho*Do2_ar*dx/dy
+Wn = Fn/2 - rho*Do2_ar*dx/dy
 S = 0
 
 A[m, m] = Wp
 A[m, m - 1] = Ww
-A[m, m + nx] = Ws
+A[m, m + nx] = Wn
 B[m] = S
 
 # Fronteira Oeste
 for m in range(nx, (ny - 2) * nx + 1, nx):
-    Wp = Fe/2 + Fn/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx/2) + rho*Do2_ar*dx/dy + rho*Do2_ar*dx/dy
+    Wp = Fe/2 + Fn/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx) + rho*Do2_ar*dx/dy + rho*Do2_ar*dx/dy
     We = Fe/2 - rho*Do2_ar*dy/dx
     Wn = Fn/2 - rho*Do2_ar*dx/dy
     Ws = -Fs/2 - rho*Do2_ar*dx/dy
-    S = Fw*Cw + rho*Do2_ar*dy/(dx/2)*Cw
+    S = Fw*Cw + rho*Do2_ar*dy/(dx)*Cw
 
     A[m, m] = Wp
     A[m, m + 1] = We
-    A[m, m + nx] = Ws
-    A[m, m - nx] = Wn
+    A[m, m - nx] = Ws
+    A[m, m + nx] = Wn
     B[m] = S
 
 # Fronteira Leste
@@ -191,52 +188,65 @@ for m in range(2 * nx - 1, (ny - 1) * nx, nx):
 
     A[m, m] = Wp
     A[m, m - 1] = Ww
-    A[m, m - nx] = Wn
-    A[m, m + nx] = Ws
+    A[m, m + nx] = Wn
+    A[m, m - nx] = Ws
     B[m] = S
 
-# Canto Inferior Esquerdo
+# Canto Superior Esquerdo
 m = (ny - 1) * nx
-Wp = Fe/2 + Fn/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx/2) + rho*Do2_ar*dx/dy
+Wp = Fe/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx) + rho*Do2_ar*dx/dy
 We = Fe/2 - rho*Do2_ar*dy/dx
-Wn = Fn/2 - rho*Do2_ar*dx/dy
-S = Fw*Cw + rho*Do2_ar*dy/(dx/2)*Cw
+Ws = -Fs/2 - rho*Do2_ar*dx/dy
+S = Fw*Cw + rho*Do2_ar*dy/(dx)*Cw
 
 A[m, m] = Wp
 A[m, m + 1] = We
-A[m, m - nx] = Wn
+A[m, m - nx] = Ws
 B[m] = S
 
-# Fronteira Sul
+# Fronteira Norte
 for m in range((ny - 1) * nx + 1, ny * nx - 1):
-    Wp = Fe/2 - Fw/2 + Fn/2 + 2*rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
-    Ww = -Fw/2 - rho*Do2_ar*dy/dx
-    We = Fe/2 - rho*Do2_ar*dy/dx
-    Wn = Fn/2 - rho*Do2_ar*dx/dy
+    Wp = Fe / 2 - Fw / 2 - Fs / 2 + 2 * rho * Do2_ar * dy / dx + rho * Do2_ar * dx / dy
+    Ww = -Fw / 2 - rho * Do2_ar * dy / dx
+    We = Fe / 2 - rho * Do2_ar * dy / dx
+    Ws = -Fs / 2 - rho * Do2_ar * dx / dy
     S = 0
 
     A[m, m] = Wp
     A[m, m - 1] = Ww
     A[m, m + 1] = We
-    A[m, m - nx] = Wn
+    A[m, m - nx] = Ws
     B[m] = S
 
-# Canto Inferior Direito
+# Canto Superior Direito
 m = ny * nx - 1
-Wp = Fe - Fw/2 + Fn/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+Wp = Fe - Fw/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
 Ww = -Fw/2 - rho*Do2_ar*dy/dx
-Wn = Fn/2 - rho*Do2_ar*dx/dy
+Ws = -Fs/2 - rho*Do2_ar*dx/dy
 S = 0
 
 A[m, m] = Wp
 A[m, m - 1] = Ww
-A[m, m - nx] = Wn
+A[m, m - nx] = Ws
 B[m] = S
 
-W = np.linalg.solve(A,B)
-XYW = W.reshape((nx, ny)).T
+# Termo fonte (apenas na região central do queimador)
+for i in range(nx):
+    for m in range(ny):
+        x_pos = i * dx
+        y_pos = m * dy
+        if (Lx / 2 - Lx / 20 <= x_pos <= Lx / 2 + Lx / 20) and (Lx / 2 - Lx / 20 <= y_pos <= Lx / 2 + Lx / 20):
+            B[m] = -r * dx * dy / rho
 
 
+x0 = np.ones(N)
+Eppara = scarvorought(12)
+Lambda = 1
+W = np.linalg.solve(A, B)
+index = np.arange(N).reshape(ny,nx)
+XYW = np.zeros((ny, nx))
+for i in range(ny):
+        XYW[(ny-1)-i, :] = W[index[i, :]]
 
 fig, ax = plt.subplots(figsize=(13, 7))
 c = ax.contourf(X, Y, XYW, cmap='plasma')
@@ -245,14 +255,4 @@ ax.set_xlabel('x (m)')
 ax.set_ylabel('y (m)')
 plt.title(r'Distrubuição da Espécie química $O_2$')
 plt.show()
-
-# Plot 3D
-fig = plt.figure(figsize=(13, 7))
-ax = fig.add_subplot(111, projection='3d')
-surf = ax.plot_surface(X, Y, XYW, cmap='plasma', edgecolor='none')
-fig.colorbar(surf, ax=ax, label='Concentração de O₂')
-ax.set_xlabel('x (m)')
-ax.set_ylabel('y (m)')
-ax.set_zlabel('Concentração')
-ax.set_title('Distribuição 3D da Espécie Química O₂')
-plt.show()
+print('A')

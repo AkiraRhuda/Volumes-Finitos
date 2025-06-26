@@ -25,8 +25,8 @@ Lx = 3  # m
 Ly = 1  # m
 
 # Parâmetros da simulação
-nx = 60
-ny = 20
+nx = 120
+ny = 60
 N = nx * ny
 
 dx = Lx/(nx - 1)
@@ -107,64 +107,69 @@ def scarvorought(n):
 # Central
 for i in range(1, ny - 1):
     for m in range(i * nx + 1, (i + 1) * nx - 1):
-        x_pos = i * dx
-        y_pos = m * dy
-        k = m * nx + i  # Índice linear do ponto
         Wp = Fe/2 - Fw/2 + Fn/2 - Fs/2 + 2*rho*Do2_ar*dy/dx + 2*rho*Do2_ar*dx/dy
         Ww = -Fw/2 - rho*Do2_ar*dy/dx
         We = Fe/2 - rho*Do2_ar*dy/dx
         Ws = -Fs/2 - rho*Do2_ar*dx/dy
         Wn = Fn/2 - rho*Do2_ar*dx/dy
         S = 0
-
         A[m, m] = Wp
         A[m, m - 1] = Ww
         A[m, m + 1] = We
-        A[m, m - nx] = Wn
-        A[m, m + nx] = Ws
+        A[m, m + nx] = Wn
+        A[m, m - nx] = Ws
         B[m] = S
 
-for i in range(int(ny/2-nx/20-1),int(ny/2+nx/20-1)):
-    for m in range(int(nx/3-nx/20-1),int(nx/3+nx/20-1)):
+#for i in range(int(ny/2-1-(nx/10-1)),int(ny/2-1+(nx/10-1))):
+#    for m in range(int(nx/3-1-(nx/10-1)),int(nx/3-1+(nx/10-1))):
+"""for i in range(int(ny/2-nx/20)-1,int(ny/2+nx/20)):
+    for m in range(int(nx/3-nx/20)-1,int(nx/3+nx/20)):
+        m_global = i * nx + m
         S = r*dx*dy
+        B[m] = S"""
+
+for i in range(int(ny/2-nx/20)-1,int(ny/2+nx/20)):
+    for m in range(i*nx + int(nx/3)-1,i*nx + int(nx/3+nx/10)):
+        S = -r*dx*dy
         B[m] = S
 
-# Canto Superior Esquerdo
+# Canto Inferior Esquerdo
 m = 0
-Wp = Fe/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx/2) + rho*Do2_ar*dx/dy
+Wp = Fe/2 + Fn/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx/2) + rho*Do2_ar*dx/dy
 We = Fe/2 - rho*Do2_ar*dy/dx
-Ws = -Fs/2 - rho*Do2_ar*dx/dy
+Wn = Fn/2 - rho*Do2_ar*dx/dy
 S = Fw*Cw + rho*Do2_ar*dy/(dx/2)*Cw
 
 A[m, m] = Wp
 A[m, m + 1] = We
-A[m, m + nx] = Ws
+A[m, m + nx] = Wn
 B[m] = S
 
-# Fronteira Norte
+# Fronteira Sul
 for m in range(1, nx - 1):
-    Wp = Fe/2 - Fw/2 - Fs/2 + 2*rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+    Wp = Fe/2 - Fw/2 + Fn/2 + 2*rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
     Ww = -Fw/2 - rho*Do2_ar*dy/dx
     We = Fe/2 - rho*Do2_ar*dy/dx
-    Ws = -Fs/2 - rho*Do2_ar*dx/dy
+    Wn = Fn/2 - rho*Do2_ar*dx/dy
     S = 0
 
     A[m, m] = Wp
     A[m, m - 1] = Ww
     A[m, m + 1] = We
-    A[m, m + nx] = Ws
+    A[m, m + nx] = Wn
     B[m] = S
 
-# Canto Superior Direito
+# Canto Inferior Direito
+
 m = nx - 1
-Wp = Fe - Fw/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+Wp = Fe - Fw/2 + Fn/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
 Ww = -Fw/2 - rho*Do2_ar*dy/dx
-Ws = -Fs/2 - rho*Do2_ar*dx/dy
+Wn = Fn/2 - rho*Do2_ar*dx/dy
 S = 0
 
 A[m, m] = Wp
 A[m, m - 1] = Ww
-A[m, m + nx] = Ws
+A[m, m + nx] = Wn
 B[m] = S
 
 # Fronteira Oeste
@@ -177,8 +182,8 @@ for m in range(nx, (ny - 2) * nx + 1, nx):
 
     A[m, m] = Wp
     A[m, m + 1] = We
-    A[m, m + nx] = Ws
-    A[m, m - nx] = Wn
+    A[m, m - nx] = Ws
+    A[m, m + nx] = Wn
     B[m] = S
 
 # Fronteira Leste
@@ -191,50 +196,50 @@ for m in range(2 * nx - 1, (ny - 1) * nx, nx):
 
     A[m, m] = Wp
     A[m, m - 1] = Ww
-    A[m, m - nx] = Wn
-    A[m, m + nx] = Ws
+    A[m, m + nx] = Wn
+    A[m, m - nx] = Ws
     B[m] = S
 
-# Canto Inferior Esquerdo
+# Canto Superior Esquerdo
 m = (ny - 1) * nx
-Wp = Fe/2 + Fn/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx/2) + rho*Do2_ar*dx/dy
+Wp = Fe/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx/2) + rho*Do2_ar*dx/dy
 We = Fe/2 - rho*Do2_ar*dy/dx
-Wn = Fn/2 - rho*Do2_ar*dx/dy
+Ws = -Fs/2 - rho*Do2_ar*dx/dy
 S = Fw*Cw + rho*Do2_ar*dy/(dx/2)*Cw
 
 A[m, m] = Wp
 A[m, m + 1] = We
-A[m, m - nx] = Wn
+A[m, m - nx] = Ws
 B[m] = S
 
-# Fronteira Sul
+# Fronteira Norte
 for m in range((ny - 1) * nx + 1, ny * nx - 1):
-    Wp = Fe/2 - Fw/2 + Fn/2 + 2*rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+    Wp = Fe/2 - Fw/2 - Fs/2 + 2*rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
     Ww = -Fw/2 - rho*Do2_ar*dy/dx
     We = Fe/2 - rho*Do2_ar*dy/dx
-    Wn = Fn/2 - rho*Do2_ar*dx/dy
+    Ws = -Fs/2 - rho*Do2_ar*dx/dy
     S = 0
 
     A[m, m] = Wp
     A[m, m - 1] = Ww
     A[m, m + 1] = We
-    A[m, m - nx] = Wn
+    A[m, m - nx] = Ws
     B[m] = S
 
-# Canto Inferior Direito
+# Canto Superior Direito
 m = ny * nx - 1
-Wp = Fe - Fw/2 + Fn/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+Wp = Fe - Fw/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
 Ww = -Fw/2 - rho*Do2_ar*dy/dx
-Wn = Fn/2 - rho*Do2_ar*dx/dy
+Ws = -Fs/2 - rho*Do2_ar*dx/dy
 S = 0
 
 A[m, m] = Wp
 A[m, m - 1] = Ww
-A[m, m - nx] = Wn
+A[m, m - nx] = Ws
 B[m] = S
 
 W = np.linalg.solve(A,B)
-XYW = W.reshape((nx, ny)).T
+XYW = W.reshape((ny, nx))
 
 
 
