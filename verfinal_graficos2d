@@ -462,25 +462,21 @@ plt.show()
 #################################################################
 
 
-
-
-# Definindo paletas de cores específicas para cada método
 cores_uds = ['#003366', '#0066cc', '#0099ff', '#66ccff']  # Tons de azul (marinho até turquesa)
 cores_cds = ['#cc0066', '#ff3399', '#ff66b3', '#ff99cc']  # Tons de rosa (fúcsia até salmão)
 
-# Comparação entre CDS e UDS - Perfis ao longo de x (y fixo)
+# y fixo
 plt.figure(figsize=(13, 7))
 
-# Selecionar algumas linhas y para comparar
 y_positions = [0.3, 0.5, 0.65, 0.95]  # Posições y de interesse
 y_indices = [np.argmin(np.abs(y - y_pos)) for y_pos in y_positions]
 
-# Primeiro plotamos as UDS (para ficarem atrás)
+# UDS 
 for yi, y_pos, cor in zip(y_indices, y_positions, cores_uds):
     plt.plot(x, XYWUDS[yi, :], '-', color=cor, linewidth=2.5, 
              label=f'UDS y={y_pos:.2f}m')
 
-# Depois plotamos as CDS (para ficarem na frente)
+# CDS
 for yi, y_pos, cor in zip(y_indices, y_positions, cores_cds):
     plt.plot(x, XYWCDS[yi, :], '--', color=cor, linewidth=2, 
              label=f'CDS y={y_pos:.2f}m')
@@ -495,23 +491,22 @@ plt.grid(True, linestyle=':', alpha=0.7)
 plt.tight_layout()
 plt.show()
 
-# Comparação entre CDS e UDS - Perfis ao longo de y (x fixo)
+# x fixo
 plt.figure(figsize=(13, 7))
 
-# Selecionar algumas colunas x para comparar
 x_positions = [0.85, 1.0, 1.3, 1.6, 2.8]  # Posições x de interesse
 x_indices = [np.argmin(np.abs(x - x_pos)) for x_pos in x_positions]
 
-# Ajustando paletas para o número de posições
+
 cores_uds_y = ['#003366', '#0066cc', '#0099ff', '#66ccff', '#99e6ff']
 cores_cds_y = ['#cc0066', '#ff3399', '#ff66b3', '#ff99cc', '#ffcce6']
 
-# Primeiro plotamos as UDS
+# UDS
 for xi, x_pos, cor in zip(x_indices, x_positions, cores_uds_y):
     plt.plot(y, XYWUDS[:, xi], '-', color=cor, linewidth=2.5, 
              label=f'UDS x={x_pos:.2f}m')
 
-# Depois plotamos as CDS
+# CDS
 for xi, x_pos, cor in zip(x_indices, x_positions, cores_cds_y):
     plt.plot(y, XYWCDS[:, xi], '--', color=cor, linewidth=2, 
              label=f'CDS x={x_pos:.2f}m')
