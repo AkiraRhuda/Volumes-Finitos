@@ -1,0 +1,527 @@
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+
+# Propriedades do Fluido (AR)
+rho = 1.1769  # kg/m^3
+T = 300  # K
+mu = 1.85*10**(-5) # Pa . s
+Do2_ar = 2.015*10**(-5) # m^2 / s
+r = 0.1 # kg / m^3 . s
+
+# Condições iniciais
+Re = 100
+Cw = 0.21*100
+
+# Parâmetros da Barra
+Lx = 3  # m
+Ly = 1  # m
+
+# Parâmetros da simulação
+nx = 60
+ny = 20
+N = nx * ny
+
+dx = Lx/(nx - 1)
+dy = Ly/(ny - 1)
+
+A = np.zeros((N, N))
+B = np.zeros(N)
+
+x = np.linspace(0, Lx, nx)
+y = np.linspace(0, Ly, ny)
+X, Y = np.meshgrid(x, y)
+
+# Termos da velocidade
+Ue = Re * mu / (rho * Ly)
+Uw = Re * mu / (rho * Ly)
+Un = 0
+Us = 0
+
+Fe = rho*Ue*dy
+Fw = rho*Uw*dy
+Fn = rho*Un*dx
+Fs = rho*Us*dx
+
+
+
+################ MONTAGEM DA MATRIZ ################
+# Central
+for i in range(1, ny - 1):
+    for m in range(i * nx + 1, (i + 1) * nx - 1):
+        Wp = Fe/2 - Fw/2 + Fn/2 - Fs/2 + 2*rho*Do2_ar*dy/dx + 2*rho*Do2_ar*dx/dy
+        Ww = -Fw/2 - rho*Do2_ar*dy/dx
+        We = Fe/2 - rho*Do2_ar*dy/dx
+        Ws = -Fs/2 - rho*Do2_ar*dx/dy
+        Wn = Fn/2 - rho*Do2_ar*dx/dy
+        S = 0
+        A[m, m] = Wp
+        A[m, m - 1] = Ww
+        A[m, m + 1] = We
+        A[m, m + nx] = Wn
+        A[m, m - nx] = Ws
+        B[m] = S
+
+# Queimador
+for i in range(int(ny/2-nx/20),int(ny/2+nx/20)):
+    for m in range(i*nx + int(nx/3-nx/20),i*nx + int(nx/3+nx/20)):
+        S = -r*dx*dy
+        B[m] = S
+
+# Canto Inferior Esquerdo
+m = 0
+Wp = Fe/2 + Fn/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx) + rho*Do2_ar*dx/dy
+We = Fe/2 - rho*Do2_ar*dy/dx
+Wn = Fn/2 - rho*Do2_ar*dx/dy
+S = Fw*Cw + rho*Do2_ar*dy/(dx)*Cw
+
+A[m, m] = Wp
+A[m, m + 1] = We
+A[m, m + nx] = Wn
+B[m] = S
+
+# Fronteira Sul
+for m in range(1, nx - 1):
+    Wp = Fe/2 - Fw/2 + Fn/2 + 2*rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+    Ww = -Fw/2 - rho*Do2_ar*dy/dx
+    We = Fe/2 - rho*Do2_ar*dy/dx
+    Wn = Fn/2 - rho*Do2_ar*dx/dy
+    S = 0
+
+    A[m, m] = Wp
+    A[m, m - 1] = Ww
+    A[m, m + 1] = We
+    A[m, m + nx] = Wn
+    B[m] = S
+
+# Canto Inferior Direito
+
+m = nx - 1
+Wp = Fe - Fw/2 + Fn/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+Ww = -Fw/2 - rho*Do2_ar*dy/dx
+Wn = Fn/2 - rho*Do2_ar*dx/dy
+S = 0
+
+A[m, m] = Wp
+A[m, m - 1] = Ww
+A[m, m + nx] = Wn
+B[m] = S
+
+# Fronteira Oeste
+for m in range(nx, (ny - 2) * nx + 1, nx):
+    Wp = Fe/2 + Fn/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx) + rho*Do2_ar*dx/dy + rho*Do2_ar*dx/dy
+    We = Fe/2 - rho*Do2_ar*dy/dx
+    Wn = Fn/2 - rho*Do2_ar*dx/dy
+    Ws = -Fs/2 - rho*Do2_ar*dx/dy
+    S = Fw*Cw + rho*Do2_ar*dy/(dx)*Cw
+
+    A[m, m] = Wp
+    A[m, m + 1] = We
+    A[m, m - nx] = Ws
+    A[m, m + nx] = Wn
+    B[m] = S
+
+# Fronteira Leste
+for m in range(2 * nx - 1, (ny - 1) * nx, nx):
+    Wp = Fe - Fw/2 + Fn/2 - Fs/2 + rho*Do2_ar*dy/dx + 2*rho*Do2_ar*dx/dy
+    Ww = -Fw/2 - rho*Do2_ar*dy/dx
+    Wn = Fn/2 - rho*Do2_ar*dx/dy
+    Ws = -Fs/2 - rho*Do2_ar*dx/dy
+    S = 0
+
+    A[m, m] = Wp
+    A[m, m - 1] = Ww
+    A[m, m + nx] = Wn
+    A[m, m - nx] = Ws
+    B[m] = S
+
+# Canto Superior Esquerdo
+m = (ny - 1) * nx
+Wp = Fe/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dy/(dx) + rho*Do2_ar*dx/dy
+We = Fe/2 - rho*Do2_ar*dy/dx
+Ws = -Fs/2 - rho*Do2_ar*dx/dy
+S = Fw*Cw + rho*Do2_ar*dy/(dx)*Cw
+
+A[m, m] = Wp
+A[m, m + 1] = We
+A[m, m - nx] = Ws
+B[m] = S
+
+# Fronteira Norte
+for m in range((ny - 1) * nx + 1, ny * nx - 1):
+    Wp = Fe/2 - Fw/2 - Fs/2 + 2*rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+    Ww = -Fw/2 - rho*Do2_ar*dy/dx
+    We = Fe/2 - rho*Do2_ar*dy/dx
+    Ws = -Fs/2 - rho*Do2_ar*dx/dy
+    S = 0
+
+    A[m, m] = Wp
+    A[m, m - 1] = Ww
+    A[m, m + 1] = We
+    A[m, m - nx] = Ws
+    B[m] = S
+
+# Canto Superior Direito
+m = ny * nx - 1
+Wp = Fe - Fw/2 - Fs/2 + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+Ww = -Fw/2 - rho*Do2_ar*dy/dx
+Ws = -Fs/2 - rho*Do2_ar*dx/dy
+S = 0
+
+A[m, m] = Wp
+A[m, m - 1] = Ww
+A[m, m - nx] = Ws
+B[m] = S
+
+W = np.linalg.solve(A,B)
+XYWCDS = W.reshape((ny, nx))
+
+
+# Pós-processamento
+fig, ax = plt.subplots(figsize=(13, 7))
+c = ax.contourf(X, Y, XYWCDS, cmap='plasma')
+fig.colorbar(c, ax=ax, label=r'Concentração (%)')
+ax.set_xlabel('x (m)')
+ax.set_ylabel('y (m)')
+
+plt.title(r'Distrubuição da Espécie química $O_2$')
+plt.show()
+
+# Plot 3D
+fig = plt.figure(figsize=(13, 7))
+ax = fig.add_subplot(111, projection='3d')
+surf = ax.plot_surface(X, Y, XYWCDS, cmap='plasma', edgecolor='none')
+fig.colorbar(surf, ax=ax, label='Concentração de O₂ (%)')
+ax.set_xlabel('x (m)')
+ax.set_ylabel('y (m)')
+ax.set_zlabel('Concentração (%)')
+ax.set_title('Distribuição 3D da Espécie Química O₂')
+plt.show()
+
+# Plot 2d
+
+
+
+
+plt.figure(figsize=(10, 6))
+
+y_indices = np.linspace(0, ny-1, 15, dtype=int)
+
+for yi in y_indices:
+    y_pos = y[yi]
+    plt.plot(x, XYWCDS[yi, :], label=f'y = {y_pos:.2f} m')
+
+plt.axhline(y=18, color='red', linestyle='--', label='Limite crítico (18%)')
+plt.xlabel('Posição x (m)')
+plt.ylabel('Concentração de O₂ (%)')
+plt.xlim(0, Lx)
+plt.title('Perfis de O₂ ao longo de x (para diferentes y)')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+plt.figure(figsize=(10, 6))
+x_positions = np.linspace(0, Lx, 15)
+x_indices = [np.argmin(np.abs(x - x_pos)) for x_pos in x_positions]
+for xi in x_indices:
+    x_val = x[xi]
+    plt.plot(y, XYWCDS[:, xi], label=f'x = {x_val:.2f} m')
+
+plt.axhline(y=18, color='red', linestyle='--', label='Limite crítico (18%)')
+plt.xlabel('Posição y (m)')
+plt.ylabel('Concentração de O₂ (%)')
+plt.xlim(0, Ly)
+plt.title('Perfis de O₂ ao longo de y (para diferentes x)')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+
+
+
+
+########################## UDS #################################
+
+A = np.zeros((N, N))
+B = np.zeros(N)
+
+x = np.linspace(0, Lx, nx)
+y = np.linspace(0, Ly, ny)
+X, Y = np.meshgrid(x, y)
+
+# Termos da velocidade
+Ue = Re * mu / (rho * Ly)
+Uw = Re * mu / (rho * Ly)
+Un = 0
+Us = 0
+
+Fe = rho*Ue*dy
+Fw = rho*Uw*dy
+Fn = rho*Un*dx
+Fs = rho*Us*dx
+
+
+
+################ MONTAGEM DA MATRIZ ################
+# Central
+for i in range(1, ny - 1):
+    for m in range(i * nx + 1, (i + 1) * nx - 1):
+        Wp = Fe + 2*rho*Do2_ar*dy/dx + 2*rho*Do2_ar*dx/dy
+        Ww = -Fw - rho*Do2_ar*dy/dx
+        We = - rho*Do2_ar*dy/dx
+        Ws = -Fs - rho*Do2_ar*dx/dy
+        Wn = Fn - rho*Do2_ar*dx/dy
+        S = 0
+        A[m, m] = Wp
+        A[m, m - 1] = Ww
+        A[m, m + 1] = We
+        A[m, m + nx] = Wn
+        A[m, m - nx] = Ws
+        B[m] = S
+
+# Queimador
+for i in range(int(ny/2-nx/20),int(ny/2+nx/20)):
+    for m in range(i*nx + int(nx/3-nx/20),i*nx + int(nx/3+nx/20)):
+        S = -r*dx*dy
+        B[m] = S
+
+# Canto Inferior Esquerdo
+m = 0
+Wp = Fe + 2*rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+We = -rho*Do2_ar*dy/dx
+Wn = Fn - rho*Do2_ar*dx/dy
+S = Fw*Cw + rho*Do2_ar*dy/dx*Cw
+
+A[m, m] = Wp
+A[m, m + 1] = We
+A[m, m + nx] = Wn
+B[m] = S
+
+# Fronteira Sul
+for m in range(1, nx - 1):
+    Wp = Fe + 2*rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+    Ww = -Fw - rho*Do2_ar*dy/dx
+    We = -rho*Do2_ar*dy/dx
+    Wn = Fn - rho*Do2_ar*dx/dy
+    S = 0
+
+    A[m, m] = Wp
+    A[m, m - 1] = Ww
+    A[m, m + 1] = We
+    A[m, m + nx] = Wn
+    B[m] = S
+
+# Canto Inferior Direito
+
+m = nx - 1
+Wp = Fe + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+Ww = -Fw - rho*Do2_ar*dy/dx
+Wn = Fn - rho*Do2_ar*dx/dy
+S = 0
+
+A[m, m] = Wp
+A[m, m - 1] = Ww
+A[m, m + nx] = Wn
+B[m] = S
+
+# Fronteira Oeste
+for m in range(nx, (ny - 2) * nx + 1, nx):
+    Wp = Fe + 2*rho*Do2_ar*dy/dx + 2*rho*Do2_ar*dx/dy
+    We = -rho*Do2_ar*dy/dx
+    Wn = Fn - rho*Do2_ar*dx/dy
+    Ws = -Fs - rho*Do2_ar*dx/dy
+    S = Fw*Cw + rho*Do2_ar*dy/dx*Cw
+
+    A[m, m] = Wp
+    A[m, m + 1] = We
+    A[m, m - nx] = Ws
+    A[m, m + nx] = Wn
+    B[m] = S
+
+# Fronteira Leste
+for m in range(2 * nx - 1, (ny - 1) * nx, nx):
+    Wp = Fe + rho*Do2_ar*dy/dx + 2*rho*Do2_ar*dx/dy
+    Ww = -Fw - rho*Do2_ar*dy/dx
+    Wn = Fn - rho*Do2_ar*dx/dy
+    Ws = -Fs - rho*Do2_ar*dx/dy
+    S = 0
+
+    A[m, m] = Wp
+    A[m, m - 1] = Ww
+    A[m, m + nx] = Wn
+    A[m, m - nx] = Ws
+    B[m] = S
+
+# Canto Superior Esquerdo
+m = (ny - 1) * nx
+Wp = Fe + 2*rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+We = -rho*Do2_ar*dy/dx
+Ws = -Fs - rho*Do2_ar*dx/dy
+S = Fw*Cw + rho*Do2_ar*dy/dx*Cw
+
+A[m, m] = Wp
+A[m, m + 1] = We
+A[m, m - nx] = Ws
+B[m] = S
+
+# Fronteira Norte
+for m in range((ny - 1) * nx + 1, ny * nx - 1):
+    Wp = Fe + 2*rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+    Ww = -Fw - rho*Do2_ar*dy/dx
+    We = -rho*Do2_ar*dy/dx
+    Ws = -Fs - rho*Do2_ar*dx/dy
+    S = 0
+
+    A[m, m] = Wp
+    A[m, m - 1] = Ww
+    A[m, m + 1] = We
+    A[m, m - nx] = Ws
+    B[m] = S
+
+# Canto Superior Direito
+m = ny * nx - 1
+Wp = Fe + rho*Do2_ar*dy/dx + rho*Do2_ar*dx/dy
+Ww = -Fw - rho*Do2_ar*dy/dx
+Ws = -Fs - rho*Do2_ar*dx/dy
+S = 0
+
+A[m, m] = Wp
+A[m, m - 1] = Ww
+A[m, m - nx] = Ws
+B[m] = S
+
+W = np.linalg.solve(A,B)
+XYWUDS = W.reshape((ny, nx))
+
+
+# Pós-processamento
+fig, ax = plt.subplots(figsize=(13, 7))
+c = ax.contourf(X, Y, XYWUDS, cmap='plasma')
+fig.colorbar(c, ax=ax, label=r'Concentração (%)')
+ax.set_xlabel('x (m)')
+ax.set_ylabel('y (m)')
+
+plt.title(r'Distrubuição da Espécie química $O_2$')
+plt.show()
+
+# Plot 3D
+fig = plt.figure(figsize=(13, 7))
+ax = fig.add_subplot(111, projection='3d')
+surf = ax.plot_surface(X, Y, XYWUDS, cmap='plasma', edgecolor='none')
+fig.colorbar(surf, ax=ax, label='Concentração de O₂ (%)')
+ax.set_xlabel('x (m)')
+ax.set_ylabel('y (m)')
+ax.set_zlabel('Concentração (%)')
+ax.set_title('Distribuição 3D da Espécie Química O₂')
+plt.show()
+
+# Plot 2d
+
+
+
+
+plt.figure(figsize=(10, 6))
+
+y_indices = np.linspace(0, ny-1, 15, dtype=int)
+
+for yi in y_indices:
+    y_pos = y[yi]
+    plt.plot(x, XYWUDS[yi, :], label=f'y = {y_pos:.2f} m')
+
+plt.axhline(y=18, color='red', linestyle='--', label='Limite crítico (18%)')
+plt.xlabel('Posição x (m)')
+plt.ylabel('Concentração de O₂ (%)')
+plt.xlim(0, Lx)
+plt.title('Perfis de O₂ ao longo de x (para diferentes y)')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+plt.figure(figsize=(10, 6))
+x_positions = np.linspace(0, Lx, 15)
+x_indices = [np.argmin(np.abs(x - x_pos)) for x_pos in x_positions]
+for xi in x_indices:
+    x_val = x[xi]
+    plt.plot(y, XYWUDS[:, xi], label=f'x = {x_val:.2f} m')
+
+plt.axhline(y=18, color='red', linestyle='--', label='Limite crítico (18%)')
+plt.xlabel('Posição y (m)')
+plt.ylabel('Concentração de O₂ (%)')
+plt.xlim(0, Ly)
+plt.title('Perfis de O₂ ao longo de y (para diferentes x)')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+
+
+#################################################################
+
+
+
+
+# Definindo paletas de cores específicas para cada método
+cores_uds = ['#003366', '#0066cc', '#0099ff', '#66ccff']  # Tons de azul (marinho até turquesa)
+cores_cds = ['#cc0066', '#ff3399', '#ff66b3', '#ff99cc']  # Tons de rosa (fúcsia até salmão)
+
+# Comparação entre CDS e UDS - Perfis ao longo de x (y fixo)
+plt.figure(figsize=(13, 7))
+
+# Selecionar algumas linhas y para comparar
+y_positions = [0.3, 0.5, 0.65, 0.95]  # Posições y de interesse
+y_indices = [np.argmin(np.abs(y - y_pos)) for y_pos in y_positions]
+
+# Primeiro plotamos as UDS (para ficarem atrás)
+for yi, y_pos, cor in zip(y_indices, y_positions, cores_uds):
+    plt.plot(x, XYWUDS[yi, :], '-', color=cor, linewidth=2.5, 
+             label=f'UDS y={y_pos:.2f}m')
+
+# Depois plotamos as CDS (para ficarem na frente)
+for yi, y_pos, cor in zip(y_indices, y_positions, cores_cds):
+    plt.plot(x, XYWCDS[yi, :], '--', color=cor, linewidth=2, 
+             label=f'CDS y={y_pos:.2f}m')
+
+plt.axhline(y=18, color='k', linestyle=':', linewidth=1.5, label='Limite crítico (18%)')
+plt.xlabel('Posição x (m)', fontsize=12)
+plt.ylabel('Concentração de O₂ (%)', fontsize=12)
+plt.xlim(0, Lx)
+plt.title('Comparação CDS vs UDS - Perfis ao longo de x', fontsize=14, pad=20)
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
+plt.grid(True, linestyle=':', alpha=0.7)
+plt.tight_layout()
+plt.show()
+
+# Comparação entre CDS e UDS - Perfis ao longo de y (x fixo)
+plt.figure(figsize=(13, 7))
+
+# Selecionar algumas colunas x para comparar
+x_positions = [0.85, 1.0, 1.3, 1.6, 2.8]  # Posições x de interesse
+x_indices = [np.argmin(np.abs(x - x_pos)) for x_pos in x_positions]
+
+# Ajustando paletas para o número de posições
+cores_uds_y = ['#003366', '#0066cc', '#0099ff', '#66ccff', '#99e6ff']
+cores_cds_y = ['#cc0066', '#ff3399', '#ff66b3', '#ff99cc', '#ffcce6']
+
+# Primeiro plotamos as UDS
+for xi, x_pos, cor in zip(x_indices, x_positions, cores_uds_y):
+    plt.plot(y, XYWUDS[:, xi], '-', color=cor, linewidth=2.5, 
+             label=f'UDS x={x_pos:.2f}m')
+
+# Depois plotamos as CDS
+for xi, x_pos, cor in zip(x_indices, x_positions, cores_cds_y):
+    plt.plot(y, XYWCDS[:, xi], '--', color=cor, linewidth=2, 
+             label=f'CDS x={x_pos:.2f}m')
+
+plt.axhline(y=18, color='k', linestyle=':', linewidth=1.5, label='Limite crítico (18%)')
+plt.xlabel('Posição y (m)', fontsize=12)
+plt.ylabel('Concentração de O₂ (%)', fontsize=12)
+plt.xlim(0, Ly)
+plt.title('Comparação CDS vs UDS - Perfis ao longo de y', fontsize=14, pad=20)
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
+plt.grid(True, linestyle=':', alpha=0.7)
+plt.tight_layout()
+plt.show()
